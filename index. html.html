@@ -1,0 +1,1048 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能差旅报销计算器 - 增强版</title>
+    <style>
+        :root {
+            --primary: #4361ee;
+            --primary-light: #4895ef;
+            --primary-dark: #3f37c9;
+            --danger: #e74c3c;
+            --success: #2ecc71;
+            --warning: #f39c12;
+            --light: #f8f9fa;
+            --dark: #2b2d42;
+            --text-dark: #2b2d42;
+            --text-light: #f8f9fa;
+            --card-bg: #ffffff;
+            --history-bg: #f8f9fa;
+            --border: #e0e0e0;
+            --shadow: 0 6px 15px rgba(0,0,0,0.1);
+            --info: #3498db;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'PingFang SC', sans-serif;
+        }
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            color: var(--text-light);
+            min-height: 100vh;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 900px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            color: #fff;
+        }
+        .card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            padding: 25px;
+            margin-bottom: 25px;
+            transition: transform 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .card:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: var(--primary);
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        }
+        h2 {
+            color: var(--primary-dark);
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--primary-light);
+            font-size: 1.8rem;
+        }
+        .input-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .input-item {
+            position: relative;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text-dark);
+            font-size: 1.1rem;
+        }
+        input, select {
+            width: 100%;
+            padding: 14px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-size: 1.1rem;
+            transition: all 0.3s;
+            background: #f8f9fa;
+        }
+        input:focus, select:focus {
+            border-color: var(--primary);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+            background: #fff;
+        }
+        .toggle-group {
+            display: flex;
+            align-items: center;
+            margin-top: 8px;
+        }
+        .toggle-group input[type="checkbox"] {
+            width: 40px;
+            height: 20px;
+            appearance: none;
+            background: #d3d3d3;
+            border-radius: 10px;
+            position: relative;
+            cursor: pointer;
+        }
+        .toggle-group input[type="checkbox"]:checked {
+            background: var(--success);
+        }
+        .toggle-group input[type="checkbox"]:before {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: white;
+            top: 2px;
+            left: 2px;
+            transition: 0.3s;
+        }
+        .toggle-group input[type="checkbox"]:checked:before {
+            left: 22px;
+        }
+        .toggle-group label {
+            margin-left: 10px;
+            margin-bottom: 0;
+            cursor: pointer;
+            font-size: 1rem;
+            color: var(--text-dark);
+        }
+        button {
+            background: linear-gradient(to right, var(--primary), var(--primary-dark));
+            color: white;
+            border: none;
+            padding: 16px;
+            font-size: 1.1rem;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            box-shadow: 0 4px 6px rgba(50, 50, 93, 0.11), 0 1px 3px rgba(0, 0, 0, 0.08);
+        }
+        button:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+            box-shadow: 0 7px 14px rgba(50, 50, 93, 0.1), 0 3px 6px rgba(0, 0, 0, 0.08);
+        }
+        .btn-block {
+            width: 100%;
+        }
+        .btn-delete {
+            background: linear-gradient(to right, var(--danger), #c0392b);
+        }
+        .btn-export {
+            background: linear-gradient(to right, var(--warning), #e67e22);
+        }
+        .btn-save {
+            background: linear-gradient(to right, var(--success), #27ae60);
+        }
+        .btn-import {
+            background: linear-gradient(to right, var(--info), #2980b9);
+        }
+        
+        /* 优化后的结果网格 - 提高对比度 */
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 12px;
+            margin: 20px 0;
+            padding: 15px;
+            background: #f0f8ff;
+            border-radius: 12px;
+        }
+        .result-item {
+            text-align: center;
+            padding: 12px;
+            border-radius: 8px;
+            background: rgba(52, 152, 219, 0.1);
+            transition: all 0.3s ease;
+        }
+        .result-item:hover {
+            transform: scale(1.05);
+            background: rgba(52, 152, 219, 0.2);
+        }
+        .result-label {
+            font-weight: 600;
+            color: #333;
+            font-size: 0.95rem;
+            margin-bottom: 5px;
+        }
+        .result-value {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #222;
+        }
+        .result-item:nth-child(1) {
+            background: rgba(231, 76, 60, 0.1);
+        }
+        .result-item:nth-child(1) .result-value {
+            color: var(--danger);
+        }
+        .result-item:nth-child(4) {
+            background: rgba(46, 204, 113, 0.1);
+        }
+        .result-item:nth-child(4) .result-value {
+            color: var(--danger);
+            font-weight: 800;
+        }
+        .history-card {
+            padding: 15px;
+            border-left: 4px solid var(--primary);
+            margin-bottom: 15px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            position: relative;
+        }
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .history-route {
+            font-weight: 600;
+            font-size: 1.2rem;
+            color: var(--primary-dark);
+        }
+        .history-date {
+            font-size: 0.9rem;
+            color: #777;
+        }
+        .history-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .history-detail {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 6px;
+        }
+        .detail-label {
+            font-weight: 600;
+            color: #555;
+            font-size: 0.9rem;
+        }
+        .detail-value {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #222;
+        }
+        .action-button {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: var(--danger);
+            font-size: 1.5rem;
+            cursor: pointer;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+        .action-button:hover {
+            background-color: rgba(231, 76, 60, 0.1);
+            transform: scale(1.1);
+        }
+        .export-section {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            padding: 25px;
+            margin-top: 20px;
+        }
+        .export-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .import-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .no-history {
+            text-align: center;
+            padding: 20px;
+            color: #777;
+            font-style: italic;
+        }
+        .balance-positive {
+            color: var(--success);
+            font-weight: 700;
+        }
+        .balance-negative {
+            color: var(--danger);
+            font-weight: 700;
+        }
+        .balance-value {
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: var(--success);
+        }
+        .fuel-cost-preview {
+            background: rgba(231, 76, 60, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .fuel-cost-label {
+            font-weight: 600;
+            color: var(--danger);
+            margin-bottom: 5px;
+        }
+        .fuel-cost-value {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--danger);
+        }
+        .file-input {
+            display: none;
+        }
+        .import-info {
+            background: rgba(52, 152, 219, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+            color: #333;
+            display: none;
+        }
+        .import-info.show {
+            display: block;
+        }
+        .import-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--info);
+            display: flex;
+            align-items: center;
+        }
+        .import-title i {
+            margin-right: 8px;
+            font-size: 1.2rem;
+        }
+        .import-result {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .import-detail {
+            background: rgba(255, 255, 255, 0.8);
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .import-detail-value {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: var(--info);
+        }
+        @media (max-width: 600px) {
+            .input-group {
+                grid-template-columns: 1fr;
+            }
+            .export-buttons, .import-buttons {
+                grid-template-columns: 1fr;
+            }
+            .history-details {
+                grid-template-columns: 1fr 1fr;
+            }
+            h1 {
+                font-size: 2rem;
+            }
+            h2 {
+                font-size: 1.5rem;
+            }
+            .result-label {
+                font-size: 0.85rem;
+            }
+            .result-value {
+                font-size: 1rem;
+            }
+        }
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 8px;
+            background-color: #fff;
+            color: #333;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            font-weight: 500;
+            z-index: 1000;
+            transform: translateX(150%);
+            transition: transform 0.4s ease;
+            display: flex;
+            align-items: center;
+            max-width: 350px;
+        }
+        .notification.show {
+            transform: translateX(0);
+        }
+        .notification.success {
+            border-left: 4px solid var(--success);
+        }
+        .notification.error {
+            border-left: 4px solid var(--danger);
+        }
+        .notification.warning {
+            border-left: 4px solid var(--warning);
+        }
+        .notification i {
+            margin-right: 10px;
+            font-size: 1.4rem;
+        }
+    </style>
+</head>
+<body>
+    <h1>智能差旅报销计算器 - 增强版</h1>
+    
+    <div class="container">
+        <div>
+            <div class="card">
+                <h2>行程信息</h2>
+                <div class="input-group">
+                    <div class="input-item">
+                        <label for="departure">出发地</label>
+                        <input type="text" id="departure" placeholder="例如：北京">
+                    </div>
+                    <div class="input-item">
+                        <label for="destination">目的地</label>
+                        <input type="text" id="destination" placeholder="例如：上海">
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <div class="input-item">
+                        <label for="distance">行驶里程（公里）</label>
+                        <input type="number" id="distance" min="0" step="0.1" placeholder="请输入公里数">
+                    </div>
+                    <div class="input-item">
+                        <label for="fuelPrice">当前油价（元/升）</label>
+                        <input type="number" id="fuelPrice" min="0" step="0.01" value="8.0" placeholder="例如：7.5">
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <div class="input-item">
+                        <label for="fuelConsumption">油耗（升/百公里）</label>
+                        <div class="toggle-group">
+                            <input type="checkbox" id="autoFuelConsumption" checked>
+                            <label for="autoFuelConsumption">自动计算油耗</label>
+                        </div>
+                        <input type="number" id="fuelConsumption" min="0" step="0.1" value="7.5" placeholder="手动输入油耗">
+                    </div>
+                    <div class="input-item">
+                        <label for="tollFee">高速费用（元）</label>
+                        <div class="toggle-group">
+                            <input type="checkbox" id="autoToll" checked>
+                            <label for="autoToll">自动计算高速费</label>
+                        </div>
+                        <input type="number" id="tollFee" min="0" step="1" placeholder="手动输入高速费">
+                    </div>
+                </div>
+                
+                <div class="fuel-cost-preview" id="fuelCostPreview" style="display: none;">
+                    <div class="fuel-cost-label">油费（自动计算）</div>
+                    <div class="fuel-cost-value" id="fuelCostPreviewValue">0.00 元</div>
+                </div>
+                
+                <div class="input-group">
+                    <div class="input-item">
+                        <label for="reimbursementRate">报销额度（元/公里）</label>
+                        <input type="number" id="reimbursementRate" min="0" step="0.01" value="1.8" placeholder="例如：1.8">
+                    </div>
+                </div>
+                
+                <button id="calculateBtn" class="btn-block btn-save">计算费用与结余</button>
+                
+                <div id="resultsSection" style="display:none;">
+                    <h2>费用明细</h2>
+                    <div class="results-grid">
+                        <div class="result-item">
+                            <div class="result-label">油费</div>
+                            <div class="result-value" id="fuelCostResult">0.00 元</div>
+                        </div>
+                        <div class="result-item">
+                            <div class="result-label">高速费</div>
+                            <div class="result-value" id="tollFeeResult">0.00 元</div>
+                        </div>
+                        <div class="result-item">
+                            <div class="result-label">报销总额</div>
+                            <div class="result-value" id="totalReimbursement">0.00 元</div>
+                        </div>
+                        <div class="result-item">
+                            <div class="result-label">实际支出</div>
+                            <div class="result-value" id="actualExpense">0.00 元</div>
+                        </div>
+                        <div class="result-item">
+                            <div class="result-label">结余</div>
+                            <div class="result-value balance-value" id="balance">0.00 元</div>
+                        </div>
+                    </div>
+                    
+                    <button id="saveBtn" class="btn-block btn-save">保存本次行程信息</button>
+                </div>
+            </div>
+            
+            <div class="export-section">
+                <h2>数据管理</h2>
+                <p>导出或导入行程记录，防止数据丢失</p>
+                
+                <h3>导出数据</h3>
+                <div class="export-buttons">
+                    <button id="exportCsvBtn" class="btn-export">导出CSV</button>
+                    <button id="exportJsonBtn" class="btn-export">导出JSON</button>
+                </div>
+                
+                <h3>导入数据</h3>
+                <div class="import-buttons">
+                    <button id="importCsvBtn" class="btn-import">导入CSV</button>
+                    <button id="importJsonBtn" class="btn-import">导入JSON</button>
+                </div>
+                <input type="file" id="fileInput" class="file-input" accept=".csv,.json">
+                
+                <div id="importInfo" class="import-info">
+                    <div class="import-title">
+                        <i>📊</i> 导入结果
+                    </div>
+                    <div class="import-result">
+                        <div class="import-detail">
+                            <div>导入记录数</div>
+                            <div class="import-detail-value" id="importedCount">0</div>
+                        </div>
+                        <div class="import-detail">
+                            <div>重复记录数</div>
+                            <div class="import-detail-value" id="duplicateCount">0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div>
+            <div class="card">
+                <h2>历史行程记录</h2>
+                <div id="historyList">
+                    <div class="no-history">暂无行程记录</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="notification" id="notification">
+        <i>ℹ️</i> <span id="notificationMessage">操作成功</span>
+    </div>
+
+    <script>
+        // 初始化变量
+        let travelHistory = JSON.parse(localStorage.getItem('travelHistory')) || [];
+        const reimbursementRate = 1.8; // 每公里报销标准
+        
+        // DOM元素
+        const dom = {
+            departure: document.getElementById('departure'),
+            destination: document.getElementById('destination'),
+            distance: document.getElementById('distance'),
+            fuelPrice: document.getElementById('fuelPrice'),
+            fuelConsumption: document.getElementById('fuelConsumption'),
+            tollFee: document.getElementById('tollFee'),
+            reimbursementRate: document.getElementById('reimbursementRate'),
+            autoFuelConsumption: document.getElementById('autoFuelConsumption'),
+            autoToll: document.getElementById('autoToll'),
+            calculateBtn: document.getElementById('calculateBtn'),
+            saveBtn: document.getElementById('saveBtn'),
+            exportCsvBtn: document.getElementById('exportCsvBtn'),
+            exportJsonBtn: document.getElementById('exportJsonBtn'),
+            importCsvBtn: document.getElementById('importCsvBtn'),
+            importJsonBtn: document.getElementById('importJsonBtn'),
+            fileInput: document.getElementById('fileInput'),
+            resultsSection: document.getElementById('resultsSection'),
+            historyList: document.getElementById('historyList'),
+            fuelCostResult: document.getElementById('fuelCostResult'),
+            tollFeeResult: document.getElementById('tollFeeResult'),
+            totalReimbursement: document.getElementById('totalReimbursement'),
+            actualExpense: document.getElementById('actualExpense'),
+            balance: document.getElementById('balance'),
+            fuelCostPreview: document.getElementById('fuelCostPreview'),
+            fuelCostPreviewValue: document.getElementById('fuelCostPreviewValue'),
+            importInfo: document.getElementById('importInfo'),
+            importedCount: document.getElementById('importedCount'),
+            duplicateCount: document.getElementById('duplicateCount'),
+            notification: document.getElementById('notification'),
+            notificationMessage: document.getElementById('notificationMessage')
+        };
+        
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化禁用状态
+            dom.fuelConsumption.disabled = dom.autoFuelConsumption.checked;
+            dom.tollFee.disabled = dom.autoToll.checked;
+            
+            // 绑定事件
+            dom.autoFuelConsumption.addEventListener('change', function() {
+                dom.fuelConsumption.disabled = this.checked;
+                if(this.checked) dom.fuelConsumption.value = "7.5";
+            });
+            
+            dom.autoToll.addEventListener('change', function() {
+                dom.tollFee.disabled = this.checked;
+                if(this.checked) dom.tollFee.value = "";
+            });
+            
+            dom.calculateBtn.addEventListener('click', calculateExpenses);
+            dom.saveBtn.addEventListener('click', saveTrip);
+            dom.exportCsvBtn.addEventListener('click', exportToCSV);
+            dom.exportJsonBtn.addEventListener('click', exportToJSON);
+            
+            // 添加导入事件监听器
+            dom.importCsvBtn.addEventListener('click', function() {
+                dom.fileInput.accept = ".csv";
+                dom.fileInput.click();
+            });
+            
+            dom.importJsonBtn.addEventListener('click', function() {
+                dom.fileInput.accept = ".json";
+                dom.fileInput.click();
+            });
+            
+            dom.fileInput.addEventListener('change', handleFileImport);
+            
+            // 添加输入事件监听器，实时计算油费
+            dom.distance.addEventListener('input', calculateFuelCost);
+            dom.fuelPrice.addEventListener('input', calculateFuelCost);
+            dom.fuelConsumption.addEventListener('input', calculateFuelCost);
+            
+            // 渲染历史记录
+            renderHistory();
+        });
+        
+        // 显示通知
+        function showNotification(message, type = "success") {
+            dom.notificationMessage.textContent = message;
+            dom.notification.className = "notification";
+            dom.notification.classList.add(type, "show");
+            
+            setTimeout(() => {
+                dom.notification.classList.remove("show");
+            }, 3000);
+        }
+        
+        // 计算油费（实时预览）
+        function calculateFuelCost() {
+            const distance = parseFloat(dom.distance.value) || 0;
+            const fuelPrice = parseFloat(dom.fuelPrice.value) || 0;
+            let fuelConsumption;
+            
+            if(dom.autoFuelConsumption.checked) {
+                fuelConsumption = 7.5; // 默认油耗
+            } else {
+                fuelConsumption = parseFloat(dom.fuelConsumption.value) || 0;
+            }
+            
+            const fuelCost = distance * (fuelConsumption / 100) * fuelPrice;
+            
+            if (distance > 0 && fuelPrice > 0 && fuelConsumption > 0) {
+                dom.fuelCostPreviewValue.textContent = fuelCost.toFixed(2) + " 元";
+                dom.fuelCostPreview.style.display = 'block';
+            } else {
+                dom.fuelCostPreview.style.display = 'none';
+            }
+        }
+        
+        // 渲染历史记录
+        function renderHistory() {
+            if(travelHistory.length === 0) {
+                dom.historyList.innerHTML = '<div class="no-history">暂无行程记录</div>';
+                return;
+            }
+            
+            dom.historyList.innerHTML = '';
+            
+            travelHistory.forEach(trip => {
+                const tripCard = document.createElement('div');
+                tripCard.className = 'history-card';
+                
+                const isPositiveBalance = trip.balance >= 0;
+                const balanceClass = isPositiveBalance ? 'balance-positive' : 'balance-negative';
+                const balanceSign = isPositiveBalance ? '+' : '';
+                
+                tripCard.innerHTML = `
+                    <div class="history-header">
+                        <div class="history-route">${trip.departure} → ${trip.destination}</div>
+                        <div class="history-date">${trip.date}</div>
+                    </div>
+                    
+                    <div class="history-details">
+                        <div class="history-detail">
+                            <div class="detail-label">里程</div>
+                            <div class="detail-value">${trip.distance.toFixed(1)} km</div>
+                        </div>
+                        <div class="history-detail">
+                            <div class="detail-label">油费</div>
+                            <div class="detail-value">${trip.fuelCost.toFixed(2)} 元</div>
+                        </div>
+                        <div class="history-detail">
+                            <div class="detail-label">高速费</div>
+                            <div class="detail-value">${trip.tollFee.toFixed(2)} 元</div>
+                        </div>
+                        <div class="history-detail">
+                            <div class="detail-label">报销额</div>
+                            <div class="detail-value">${trip.totalReimbursement.toFixed(2)} 元</div>
+                        </div>
+                        <div class="history-detail">
+                            <div class="detail-label">实际支出</div>
+                            <div class="detail-value" style="color: var(--danger);">${trip.actualExpense.toFixed(2)} 元</div>
+                        </div>
+                        <div class="history-detail">
+                            <div class="detail-label">结余</div>
+                            <div class="detail-value ${balanceClass}">${balanceSign}${trip.balance.toFixed(2)} 元</div>
+                        </div>
+                    </div>
+                    <button class="action-button" data-id="${trip.id}">×</button>
+                `;
+                
+                dom.historyList.appendChild(tripCard);
+                
+                // 为删除按钮添加事件监听器
+                const deleteButton = tripCard.querySelector('.action-button');
+                deleteButton.addEventListener('click', function() {
+                    const id = parseInt(this.getAttribute('data-id'));
+                    deleteTrip(id);
+                });
+            });
+        }
+        
+        // 计算费用函数
+        function calculateExpenses() {
+            // 获取输入值
+            const distance = parseFloat(dom.distance.value) || 0;
+            const fuelPrice = parseFloat(dom.fuelPrice.value) || 0;
+            const reimbursementRate = parseFloat(dom.reimbursementRate.value) || 1.8;
+            
+            // 计算油费
+            let fuelConsumption;
+            if(dom.autoFuelConsumption.checked) {
+                fuelConsumption = 7.5; // 默认油耗
+            } else {
+                fuelConsumption = parseFloat(dom.fuelConsumption.value) || 0;
+            }
+            const fuelCost = distance * (fuelConsumption / 100) * fuelPrice;
+            
+            // 计算高速费
+            let tollFee;
+            if(dom.autoToll.checked) {
+                tollFee = distance * 0.5; // 默认每公里0.5元
+            } else {
+                tollFee = parseFloat(dom.tollFee.value) || 0;
+            }
+            
+            // 计算报销相关费用
+            const totalReimbursement = distance * reimbursementRate;
+            const actualExpense = fuelCost + tollFee;
+            const balance = totalReimbursement - actualExpense;
+            
+            // 更新UI
+            dom.fuelCostResult.textContent = fuelCost.toFixed(2) + " 元";
+            dom.tollFeeResult.textContent = tollFee.toFixed(2) + " 元";
+            dom.totalReimbursement.textContent = totalReimbursement.toFixed(2) + " 元";
+            dom.actualExpense.textContent = actualExpense.toFixed(2) + " 元";
+            dom.balance.textContent = balance.toFixed(2) + " 元";
+            
+            // 显示结果区域
+            dom.resultsSection.style.display = 'block';
+            
+            // 更新余额颜色
+            dom.balance.className = 'result-value balance-value ' + (balance >= 0 ? 'balance-positive' : 'balance-negative');
+            
+            // 设置实际支出为红色
+            dom.actualExpense.style.color = 'var(--danger)';
+        }
+        
+        // 保存行程函数
+        function saveTrip() {
+            if(!dom.departure.value || !dom.destination.value || !dom.distance.value) {
+                showNotification("请填写完整的行程信息", "error");
+                return;
+            }
+            
+            const trip = {
+                id: Date.now(),
+                date: new Date().toLocaleString('zh-CN', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                }),
+                departure: dom.departure.value,
+                destination: dom.destination.value,
+                distance: parseFloat(dom.distance.value),
+                fuelPrice: parseFloat(dom.fuelPrice.value),
+                fuelConsumption: parseFloat(dom.fuelConsumption.value),
+                tollFee: parseFloat(dom.tollFee.value) || 0,
+                reimbursementRate: parseFloat(dom.reimbursementRate.value) || 1.8,
+                fuelCost: parseFloat(dom.fuelCostResult.textContent),
+                totalReimbursement: parseFloat(dom.totalReimbursement.textContent),
+                actualExpense: parseFloat(dom.actualExpense.textContent),
+                balance: parseFloat(dom.balance.textContent),
+                autoFuel: dom.autoFuelConsumption.checked,
+                autoToll: dom.autoToll.checked
+            };
+            
+            travelHistory.unshift(trip);
+            localStorage.setItem('travelHistory', JSON.stringify(travelHistory));
+            
+            showNotification("行程保存成功！");
+            renderHistory();
+            resetForm();
+        }
+        
+        // 删除行程函数
+        function deleteTrip(id) {
+            travelHistory = travelHistory.filter(trip => trip.id !== id);
+            localStorage.setItem('travelHistory', JSON.stringify(travelHistory));
+            renderHistory();
+            showNotification("行程已删除", "warning");
+        }
+        
+        // 导出为CSV
+        function exportToCSV() {
+            if (travelHistory.length === 0) {
+                showNotification("没有可导出的行程记录", "error");
+                return;
+            }
+            
+            let csvContent = "日期,出发地,目的地,里程(km),油费(元),高速费(元),报销额(元),实际支出(元),结余(元)\n";
+            
+            travelHistory.forEach(trip => {
+                const row = [
+                    `"${trip.date}"`,
+                    `"${trip.departure}"`,
+                    `"${trip.destination}"`,
+                    trip.distance.toFixed(1),
+                    trip.fuelCost.toFixed(2),
+                    trip.tollFee.toFixed(2),
+                    trip.totalReimbursement.toFixed(2),
+                    trip.actualExpense.toFixed(2),
+                    trip.balance.toFixed(2)
+                ];
+                
+                csvContent += row.join(',') + '\n';
+            });
+            
+            downloadFile(csvContent, 'travel-history.csv', 'text/csv;charset=utf-8;');
+            showNotification("CSV导出成功");
+        }
+        
+        // 导出为JSON
+        function exportToJSON() {
+            if (travelHistory.length === 0) {
+                showNotification("没有可导出的行程记录", "error");
+                return;
+            }
+            
+            const data = {
+                generatedAt: new Date().toISOString(),
+                count: travelHistory.length,
+                records: travelHistory
+            };
+            
+            const jsonContent = JSON.stringify(data, null, 2);
+            downloadFile(jsonContent, 'travel-history.json', 'application/json');
+            showNotification("JSON导出成功");
+        }
+        
+        // 处理文件导入
+        function handleFileImport(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            const extension = file.name.split('.').pop().toLowerCase();
+            
+            reader.onload = function(e) {
+                const content = e.target.result;
+                let importedData = [];
+                let importedCount = 0;
+                let duplicateCount = 0;
+                
+                try {
+                    if (extension === 'csv') {
+                        importedData = parseCSV(content);
+                    } else if (extension === 'json') {
+                        const jsonData = JSON.parse(content);
+                        importedData = jsonData.records || [];
+                    } else {
+                        showNotification("不支持的文件格式", "error");
+                        return;
+                    }
+                    
+                    // 处理导入数据
+                    importedData.forEach(item => {
+                        // 检查是否已存在相同ID的记录
+                        const exists = travelHistory.some(trip => trip.id === item.id);
+                        
+                        if (!exists) {
+                            // 确保数据完整性
+                            if (item.id && item.date && item.departure && item.destination) {
+                                travelHistory.push(item);
+                                importedCount++;
+                            }
+                        } else {
+                            duplicateCount++;
+                        }
+                    });
+                    
+                    // 更新本地存储
+                    localStorage.setItem('travelHistory', JSON.stringify(travelHistory));
+                    
+                    // 显示导入结果
+                    dom.importedCount.textContent = importedCount;
+                    dom.duplicateCount.textContent = duplicateCount;
+                    dom.importInfo.classList.add('show');
+                    
+                    // 重新渲染历史记录
+                    renderHistory();
+                    
+                    // 显示通知
+                    showNotification(`成功导入 ${importedCount} 条记录，跳过 ${duplicateCount} 条重复记录`);
+                    
+                } catch (error) {
+                    console.error('导入错误:', error);
+                    showNotification("导入失败: 文件格式错误", "error");
+                }
+                
+                // 重置文件输入
+                dom.fileInput.value = '';
+            };
+            
+            reader.readAsText(file);
+        }
+        
+        // 解析CSV内容
+        function parseCSV(content) {
+            const lines = content.split('\n');
+            const result = [];
+            
+            // 从第二行开始（跳过标题行）
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+                
+                const values = line.split(',').map(v => v.replace(/^"|"$/g, '').trim());
+                
+                if (values.length >= 9) {
+                    // 尝试将数字字段转换为数值
+                    const parsedItem = {
+                        id: Date.now() + i, // 为新记录生成ID
+                        date: values[0],
+                        departure: values[1],
+                        destination: values[2],
+                        distance: parseFloat(values[3]) || 0,
+                        fuelCost: parseFloat(values[4]) || 0,
+                        tollFee: parseFloat(values[5]) || 0,
+                        totalReimbursement: parseFloat(values[6]) || 0,
+                        actualExpense: parseFloat(values[7]) || 0,
+                        balance: parseFloat(values[8]) || 0,
+                        autoFuel: true,
+                        autoToll: true
+                    };
+                    
+                    result.push(parsedItem);
+                }
+            }
+            
+            return result;
+        }
+        
+        // 文件下载函数
+        function downloadFile(content, fileName, contentType) {
+            const blob = new Blob([content], { type: contentType });
+            const url = URL.createObjectURL(blob);
+            
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', fileName);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+        
+        // 重置表单
+        function resetForm() {
+            dom.departure.value = '';
+            dom.destination.value = '';
+            dom.distance.value = '';
+            dom.fuelPrice.value = '8.0';
+            dom.fuelConsumption.value = '7.5';
+            dom.tollFee.value = '';
+            dom.reimbursementRate.value = '1.8';
+            dom.autoFuelConsumption.checked = true;
+            dom.autoToll.checked = true;
+            dom.fuelConsumption.disabled = true;
+            dom.tollFee.disabled = true;
+            dom.resultsSection.style.display = 'none';
+            dom.fuelCostPreview.style.display = 'none';
+        }
+    </script>
+</body>
+</html>
